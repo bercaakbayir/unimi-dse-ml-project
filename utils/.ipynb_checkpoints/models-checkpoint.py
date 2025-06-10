@@ -4,13 +4,29 @@ from cvxopt import matrix, solvers
 
 class SVM:
     def __init__(self, learning_rate=0.01, lambda_l2=0.00, lambda_l1=0.00, n_iters=1000, positive_label='good'):
-        self.lr = learning_rate
+        self.learning_rate = learning_rate
         self.lambda_l2 = lambda_l2
         self.lambda_l1 = lambda_l1
         self.n_iters = n_iters
         self.positive_label = positive_label
         self.w = None
         self.b = None
+        
+    def get_params(self, deep=True):
+        """Return parameters as a dictionary (required for cloning)"""
+        return {
+            'learning_rate': self.learning_rate,
+            'lambda_l2': self.lambda_l2,
+            'lambda_l1': self.lambda_l1,
+            'n_iters': self.n_iters,
+            'positive_label':self.positive_label
+        }
+        
+    def set_params(self, **params):
+        """Set parameters (required for cloning)"""
+        for param, value in params.items():
+            setattr(self, param, value)
+        return self
 
     def fit(self, X, y):
         n_samples, n_features = X.shape
@@ -28,12 +44,12 @@ class SVM:
                 condition = y_numeric[idx] * (np.dot(x_i, self.w) + self.b) >= 1
                 if condition:
                     # Only regularization
-                    self.w -= self.lr * (2 * self.lambda_l2 * self.w + self.lambda_l1 * np.sign(self.w))
+                    self.w -= self.learning_rate * (2 * self.lambda_l2 * self.w + self.lambda_l1 * np.sign(self.w))
                 else:
                     # Regularization + hinge loss gradient
-                    self.w -= self.lr * (
+                    self.w -= self.learning_rate * (
                                 2 * self.lambda_l2 * self.w + self.lambda_l1 * np.sign(self.w) - y_numeric[idx] * x_i)
-                    self.b -= self.lr * y_numeric[idx]
+                    self.b -= self.learning_rate * y_numeric[idx]
 
     def predict(self, X):
         linear_output = np.dot(X, self.w) + self.b
@@ -108,7 +124,7 @@ class KernelSVM:
 
 
 class LogisticRegression:
-    def __init__(self, learning_rate=0.1, epochs=1000, l1=0.0, l2=0.0, positive_class=1):
+    def __init__(self, learning_rate=0.1, epochs=1000, l1=0.0, l2=0.0, positive_class="good"):
         """
         Parameters:
         - learning_rate: gradient step size
@@ -155,6 +171,22 @@ class LogisticRegression:
         grad += self.l1 * np.sign(self.weights)  # L1
 
         return grad
+    
+    def get_params(self, deep=True):
+        """Return parameters as a dictionary (required for cloning)"""
+        return {
+            'learning_rate': self.learning_rate,
+            'epochs':self.epochs,
+            'l2': self.l2,
+            'l1': self.l1,
+            'positive_class':self.positive_class
+        }
+        
+    def set_params(self, **params):
+        """Set parameters (required for cloning)"""
+        for param, value in params.items():
+            setattr(self, param, value)
+        return self
 
     def fit(self, X, y):
         m, n = X.shape
@@ -260,3 +292,5 @@ class KernelLogisticRegression:
     def accuracy(self, X, y):
         preds = self.predict(X)
         return np.mean(preds == y)
+
+
