@@ -86,7 +86,7 @@ def nested_cross_validation(X, y, model, param_grid, outer_k=5, inner_k=5,
                 current_model = clone_func(model)
                 current_model.set_params(**params)
                 
-                current_model.fit(X_train[inner_train_idx], y_train[inner_train_idx])
+                current_model.fit(X_train[inner_train_idx], y_train[inner_train_idx], silence=True)
                 score = scoring(current_model, X_train[inner_val_idx], y_train[inner_val_idx])
                 inner_scores.append(score)
             
@@ -98,7 +98,7 @@ def nested_cross_validation(X, y, model, param_grid, outer_k=5, inner_k=5,
         
         best_model = clone_func(model)
         best_model.set_params(**best_inner_params)
-        best_model.fit(X_train, y_train)
+        best_model.fit(X_train, y_train, silence=True)
         
         outer_score = scoring(best_model, X_test, y_test)
         
