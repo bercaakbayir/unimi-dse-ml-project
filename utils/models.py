@@ -367,5 +367,7 @@ class KernelLogisticRegression:
     def accuracy(self, X, y):
         preds = self.predict(X)
         return np.mean(preds == y)
-
-
+    
+    
+    
+    

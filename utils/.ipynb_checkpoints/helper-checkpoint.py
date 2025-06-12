@@ -1,6 +1,7 @@
 import pandas as pd
 from collections import Counter
 import numpy as np
+import matplotlib.pyplot as plt
 
 def IQR(df, threshold=3, exclude_cols='quality'):
     df_copy = df.copy()
@@ -232,3 +233,43 @@ def train_test_split(X, y, test_size=0.2, random_state=None, shuffle=True):
     y_test = y[test_indices]
 
     return X_train, X_test, y_train, y_test
+
+
+
+
+def plot_model_loss(model, vline_epoch=None, title=None, train_label="Train Loss", test_label="Test Loss", train_color='blue', test_color='orange'):
+    """
+    Plot training and test loss per epoch for a given model (Logistic Regression or SVM).
+
+    Parameters:
+    - model: Trained model instance, expected to have attributes: n_iters, train_losses, optionally test_losses.
+    - vline_epoch: (int or None) Optional epoch number to highlight with a vertical dashed line.
+    - title: (str or None) Title for the plot. If None, a default title will be generated based on model class name.
+    - train_label: (str) Label for training loss line.
+    - test_label: (str) Label for test loss line.
+    - train_color: (str) Color for training loss line.
+    - test_color: (str) Color for test loss line.
+    """
+    epochs = range(1, model.n_iters + 1)
+
+    plt.figure(figsize=(8, 6))
+    plt.plot(epochs, model.train_losses, label=train_label, color=train_color)
+    
+    if hasattr(model, 'test_losses') and model.test_losses:
+        plt.plot(epochs, model.test_losses, label=test_label, color=test_color)
+
+    if vline_epoch is not None:
+        plt.axvline(x=vline_epoch, color='red', linestyle='--', label=f'Epoch {vline_epoch}')
+
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+
+    if title is None:
+        model_name = type(model).__name__
+        title = f'{model_name} Loss per Epoch'
+
+    plt.title(title)
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
