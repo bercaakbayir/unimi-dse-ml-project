@@ -84,16 +84,19 @@ class LogisticRegression:
             z = np.dot(K, self.weights)
             y_pred = self.sigmoid(z)
 
-            errors = -y * (1 - self.sigmoid(y * z))
-            grad = np.dot(errors, K) / K.shape[0]
+            m = K.shape[0]
+            y_binary = (y + 1) / 2  # convert labels from {-1,1} to {0,1}
+            errors = y_pred - y_binary  # predicted - true
+
+            grad = np.dot(K.T, errors) / m
 
             grad += self.l2 * self.weights
             grad += self.l1 * np.sign(self.weights)
 
             self.weights -= self.learning_rate * grad
 
-            # Loss and accuracy
-            train_loss = -np.mean(np.log(self.sigmoid(y * np.dot(K, self.weights))))
+            z = y * np.dot(K, self.weights)
+            train_loss = np.mean(np.log(1 + np.exp(-z)))
             train_acc = self.accuracy(X, np.where(y == 1, self.positive_class, self.negative_class))
             self.train_losses.append(train_loss)
             self.train_accuracies.append(train_acc)
@@ -126,6 +129,16 @@ class LogisticRegression:
     def accuracy(self, X, y):
         preds = self.predict(X)
         return np.mean(preds == y)
+    
+    def get_feature_importance(self):
+        if self.kernel != 'linear':
+            raise ValueError("Feature importance with linear weights only applies for linear kernel.")
+
+        feature_importance = self.X_train.T @ self.weights  # shape (n_features,)
+
+        return feature_importance
+
+
 
     
 
@@ -140,7 +153,7 @@ class SVM:
         
         # Kernel related params
         self.kernel_name = kernel
-        self.C = C  # regularization param for dual formulation (only used for kernels != linear)
+        self.C = C  
         self.gamma = gamma
         
         self.w = None
@@ -190,7 +203,6 @@ class SVM:
         y_numeric = np.where(y_train == self.positive_label, 1, -1).astype(float)
 
         if self.kernel_name == 'linear':
-            # Use your existing primal SGD approach for linear kernel
             n_samples, n_features = X_train.shape
             self.w = np.zeros(n_features)
             self.b = 0
@@ -201,7 +213,7 @@ class SVM:
             self.test_accuracies = []
 
             for epoch in range(1, self.n_iters + 1):
-                eta = self.learning_rate / (1 + 0.01 * epoch)  # decaying learning rate
+                eta = self.learning_rate / (1 + 0.01 * epoch) 
 
                 for idx, x_i in enumerate(X_train):
                     condition = y_numeric[idx] * (np.dot(x_i, self.w) + self.b) >= 1
@@ -226,7 +238,6 @@ class SVM:
                         print(f"Epoch {epoch}: Train Loss={train_loss:.4f}, Train Accuracy={train_acc:.4f} | Test Loss={test_loss:.4f}, Test Accuracy={test_acc:.4f}")
 
         else:
-            # Kernel != linear: use dual QP solver method (like KernelSVM)
             m, n = X_train.shape
             K = self.kernel(X_train, X_train)
             P = matrix(np.outer(y_numeric, y_numeric) * K)
@@ -263,6 +274,30 @@ class SVM:
 
         return np.where(raw_preds == 1, self.positive_label,
                         [label for label in self.classes_ if label != self.positive_label][0])
+    
+    def predict_proba(self, X):
+        """
+        Returns probability estimates with explicit control over positive class.
+        Ensures probabilities align with the intended positive label ('good').
+        """
+        if self.kernel_name == 'linear':
+            decision = np.dot(X, self.w) + self.b
+        else:
+            decision = np.sum(self.alphas * self.sv_y * self.kernel(X, self.sv_X), axis=1) + self.b
+
+        probs = 1 / (1 + np.exp(-decision))
+
+        proba = np.zeros((len(probs), 2))
+
+        if self.positive_label == 'good':
+            proba[:, 1] = probs   # P(good)
+            proba[:, 0] = 1 - probs  # P(not good)
+        else:
+            proba[:, 0] = probs   # P(original positive class)
+            proba[:, 1] = 1 - probs  # P(good)
+            self.classes_ = np.array([self.positive_label, 'good'])  # Update class labels
+
+        return proba
 
     def _hinge_loss(self, X, y_numeric):
         distances = 1 - y_numeric * (np.dot(X, self.w) + self.b)
@@ -277,4 +312,15 @@ class SVM:
     def _accuracy(self, X, y):
         preds = self.predict(X)
         return np.mean(preds == y)
+    
+    def get_feature_importance(self, feature_names=None):
+        if self.kernel_name != 'linear':
+            raise ValueError("Feature importance is only available for linear kernel.")
+
+        importance = np.abs(self.w)
+        if feature_names is not None:
+            return dict(zip(feature_names, importance))
+        return importance
+    
+    
 
