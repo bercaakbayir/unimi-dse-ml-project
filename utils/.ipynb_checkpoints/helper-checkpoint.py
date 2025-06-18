@@ -46,7 +46,7 @@ def cap_outliers_iqr(df, threshold=3, exclude_cols='quality'):
     return df_capped
 
 
-def standard_scale(df, exclude_cols=['quality']):
+def standard_scale(df, exclude_cols=['quality','wine_type_red', 'wine_type_white']):
     df_scaled = df.copy()
 
     if exclude_cols is None:
