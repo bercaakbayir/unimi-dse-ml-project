@@ -1,5 +1,6 @@
 import numpy as np
 from cvxopt import matrix, solvers
+
 class LogisticRegression:
     def __init__(self, learning_rate=0.1, n_iters=100, l1=0.0, l2=0.0, positive_class="good",
                  kernel='linear', gamma=1.0, degree=3, coef0=1.0):
